@@ -60,6 +60,11 @@ from ..moe.layer import MoE
 from ..git_version_info import version
 
 from deepspeed.profiling.flops_profiler.profiler import FlopsProfiler
+import line_profiler
+import atexit
+profile = line_profiler.LineProfiler()
+atexit.register(profile.print_stats)
+
 
 MEMORY_OPT_ALLREDUCE_SIZE = 500000000
 
@@ -1278,6 +1283,7 @@ class DeepSpeedEngine(Module):
 
         return scaled_loss
 
+    @profile
     def forward(self, *inputs, **kwargs):
         r"""Execute forward propagation
 
@@ -1361,6 +1367,7 @@ class DeepSpeedEngine(Module):
             else:
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
 
+    @profile
     def backward(self, loss, allreduce_gradients=True, release_loss=False):
         r"""Execute backward pass on the loss
 
