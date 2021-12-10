@@ -60,9 +60,7 @@ from ..moe.layer import MoE
 from ..git_version_info import version
 
 from deepspeed.profiling.flops_profiler.profiler import FlopsProfiler
-import line_profiler
-import atexit
-profile = line_profiler.LineProfiler()
+from line_profiler import LineProfiler
 
 
 MEMORY_OPT_ALLREDUCE_SIZE = 500000000
@@ -1282,16 +1280,25 @@ class DeepSpeedEngine(Module):
 
         return scaled_loss
 
-    @profile
     def forward(self, *inputs, **kwargs):
+        lp = LineProfiler()
+        lp_wrapper = lp(self.forward_internal)
+        lp_wrapper(inputs, kwargs)
+        lp.print_stats()
+        
+    def backward(self, loss, allreduce_gradients=True, release_loss=False):
+        lp = LineProfiler()
+        lp_wrapper = lp(self.backward_internal)
+        lp_wrapper(loss, allreduce_gradients, release_loss)
+        lp.print_stats()
+    
+    def forward_internal(self, *inputs, **kwargs):
         r"""Execute forward propagation
 
         Arguments:
             *inputs: Variable length input list
             **kwargs: variable length keyword arguments
         """
-        atexit.register(profile.print_stats)
-        
         if self.flops_profiler_enabled(
         ) and self.global_steps == self.flops_profiler_profile_step(
         ) and self.global_rank == 0:
@@ -1348,8 +1355,6 @@ class DeepSpeedEngine(Module):
                 detailed=self.flops_profiler_detailed(),
                 output_file=self.flops_profiler_output_file())
             self.flops_profiler.end_profile()
-
-        atexit._run_exitfuncs()
         return loss
 
     def allreduce_gradients(self, bucket_size=MEMORY_OPT_ALLREDUCE_SIZE):
@@ -1369,17 +1374,13 @@ class DeepSpeedEngine(Module):
             else:
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
 
-    @profile
-    def backward(self, loss, allreduce_gradients=True, release_loss=False):
+    def backward_internal(self, loss, allreduce_gradients=True, release_loss=False):
         r"""Execute backward pass on the loss
 
         Arguments:
             loss: Torch tensor on which to execute backward propagation
             allreduce_gradients: is deprecated, ignored, and will soon be removed'
         """
-        
-        atexit.register(profile.print_stats)
-
         if not allreduce_gradients:
             logger.warning(
                 f'Argument `allreduce_gradients` is deprecated, ignored, and will soon be removed'
@@ -1457,8 +1458,6 @@ class DeepSpeedEngine(Module):
             # loss.data = None
             pass
         
-        atexit._run_exitfuncs()
-
         return loss
 
     def is_gradient_accumulation_boundary(self):
