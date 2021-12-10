@@ -60,10 +60,9 @@ from ..moe.layer import MoE
 from ..git_version_info import version
 
 from deepspeed.profiling.flops_profiler.profiler import FlopsProfiler
-#import line_profiler
-#import atexit
-#profile = line_profiler.LineProfiler()
-#atexit.register(profile.print_stats)
+import line_profiler
+import atexit
+profile = line_profiler.LineProfiler()
 
 
 MEMORY_OPT_ALLREDUCE_SIZE = 500000000
@@ -1283,7 +1282,7 @@ class DeepSpeedEngine(Module):
 
         return scaled_loss
 
-    #@profile
+    @profile
     def forward(self, *inputs, **kwargs):
         r"""Execute forward propagation
 
@@ -1291,6 +1290,8 @@ class DeepSpeedEngine(Module):
             *inputs: Variable length input list
             **kwargs: variable length keyword arguments
         """
+        atexit.register(profile.print_stats)
+        
         if self.flops_profiler_enabled(
         ) and self.global_steps == self.flops_profiler_profile_step(
         ) and self.global_rank == 0:
@@ -1348,6 +1349,7 @@ class DeepSpeedEngine(Module):
                 output_file=self.flops_profiler_output_file())
             self.flops_profiler.end_profile()
 
+        atexit._run_exitfuncs()
         return loss
 
     def allreduce_gradients(self, bucket_size=MEMORY_OPT_ALLREDUCE_SIZE):
@@ -1367,7 +1369,7 @@ class DeepSpeedEngine(Module):
             else:
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
 
-    #@profile
+    @profile
     def backward(self, loss, allreduce_gradients=True, release_loss=False):
         r"""Execute backward pass on the loss
 
@@ -1375,6 +1377,8 @@ class DeepSpeedEngine(Module):
             loss: Torch tensor on which to execute backward propagation
             allreduce_gradients: is deprecated, ignored, and will soon be removed'
         """
+        
+        atexit.register(profile.print_stats)
 
         if not allreduce_gradients:
             logger.warning(
@@ -1452,6 +1456,8 @@ class DeepSpeedEngine(Module):
         if release_loss:
             # loss.data = None
             pass
+        
+        atexit._run_exitfuncs()
 
         return loss
 
