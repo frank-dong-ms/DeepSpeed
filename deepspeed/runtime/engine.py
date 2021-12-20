@@ -1283,14 +1283,16 @@ class DeepSpeedEngine(Module):
     def forward(self, *inputs, **kwargs):
         lp = LineProfiler()
         lp_wrapper = lp(self.forward_internal)
-        lp_wrapper(*inputs, **kwargs)
+        loss = lp_wrapper(*inputs, **kwargs)
         lp.print_stats()
+        return loss
         
     def backward(self, loss, allreduce_gradients=True, release_loss=False):
         lp = LineProfiler()
         lp_wrapper = lp(self.backward_internal)
-        lp_wrapper(loss, allreduce_gradients, release_loss)
+        loss = lp_wrapper(loss, allreduce_gradients, release_loss)
         lp.print_stats()
+        return loss
     
     def forward_internal(self, *inputs, **kwargs):
         r"""Execute forward propagation
