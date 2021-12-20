@@ -1283,7 +1283,7 @@ class DeepSpeedEngine(Module):
     def forward(self, *inputs, **kwargs):
         lp = LineProfiler()
         lp_wrapper = lp(self.forward_internal)
-        lp_wrapper(inputs, kwargs)
+        lp_wrapper(*inputs, **kwargs)
         lp.print_stats()
         
     def backward(self, loss, allreduce_gradients=True, release_loss=False):
