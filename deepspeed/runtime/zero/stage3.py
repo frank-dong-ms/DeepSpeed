@@ -27,6 +27,8 @@ from deepspeed.runtime.swap_tensor.partitioned_param_swapper import PartitionedP
 from deepspeed.runtime.swap_tensor.partitioned_optimizer_swapper import PartitionedOptimizerSwapper
 from deepspeed.runtime.swap_tensor.pipelined_optimizer_swapper import PipelinedOptimizerSwapper
 
+from line_profiler import LineProfiler
+
 # Toggle this to true to enable correctness test
 # with gradient partitioning and without
 pg_correctness_test = False
@@ -2942,6 +2944,12 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
             return False
 
     def backward(self, loss, retain_graph=False):
+        lp = LineProfiler()
+        lp_wrapper = lp(self.backward_internal)
+        lp_wrapper(self, loss, retain_graph)
+        lp.print_stats()
+        
+    def backward_internal(self, loss, retain_graph=False):
         """
         :attr:`backward` performs the following steps:
 
