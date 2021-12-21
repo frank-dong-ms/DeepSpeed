@@ -1262,8 +1262,10 @@ class DeepSpeedEngine(Module):
 
     def _scale_loss_by_gas(self, prescaled_loss):
         if isinstance(prescaled_loss, torch.Tensor):
+            logger.info(f'_scale_loss_by_gas is tensor...')
             scaled_loss = prescaled_loss / self.gradient_accumulation_steps()
         elif isinstance(prescaled_loss, tuple) or isinstance(prescaled_loss, list):
+            logger.info(f'_scale_loss_by_gas is tuple or list...')
             scaled_loss = []
             for l in prescaled_loss:
                 if isinstance(l, torch.Tensor):
