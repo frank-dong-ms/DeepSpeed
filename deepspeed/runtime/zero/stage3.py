@@ -2946,7 +2946,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
     def backward(self, loss, retain_graph=False):
         lp = LineProfiler()
         lp_wrapper = lp(self.backward_internal)
-        lp_wrapper(self, loss, retain_graph)
+        lp_wrapper(loss, retain_graph)
         lp.print_stats()
         
     def backward_internal(self, loss, retain_graph=False):
