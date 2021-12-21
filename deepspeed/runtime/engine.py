@@ -1423,12 +1423,13 @@ class DeepSpeedEngine(Module):
             )
             logger.info(f'self.optimizer:{self.optimizer}...')
             logger.info(f"Start profile for backward pass...")
-            lp = LineProfiler()
-            lp_wrapper = lp(self.optimizer.backward)
-            lp_wrapper(loss)
-            lp.print_stats()
+            #lp = LineProfiler()
+            #lp_wrapper = lp(self.optimizer.backward)
+            #lp_wrapper(loss)
+            #lp.print_stats()
+            self.optimizer.backward(loss)
             logger.info(f"Finish profile for backward pass...")
-            # self.optimizer.backward(loss)
+            
         elif self.amp_enabled():
             # AMP requires delaying unscale when inside gradient accumulation boundaries
             # https://nvidia.github.io/apex/advanced.html#gradient-accumulation-across-iterations
