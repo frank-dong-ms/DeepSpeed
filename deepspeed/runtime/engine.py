@@ -1058,6 +1058,7 @@ class DeepSpeedEngine(Module):
         ) and zero_stage == ZERO_OPTIMIZATION_OPTIMIZER_STATES:
             assert not self.has_moe_layers, "MoE not supported with Stage 1"
 
+            logger.info(f'backward optimizer: FP16_DeepSpeedZeroOptimizer_Stage1')
             optimizer = FP16_DeepSpeedZeroOptimizer_Stage1(
                 optimizer,
                 static_loss_scale=self.loss_scale(),
@@ -1091,6 +1092,7 @@ class DeepSpeedEngine(Module):
                     )
                     overlap_comm = False
 
+            logger.info(f'backward optimizer: FP16_DeepSpeedZeroOptimizer')
             optimizer = FP16_DeepSpeedZeroOptimizer(
                 optimizer,
                 timers=timers,
@@ -1124,6 +1126,7 @@ class DeepSpeedEngine(Module):
             assert not self.has_moe_layers, "MoE not supported with Stage 3"
             print("Initializing ZeRO Stage 3") if dist.get_rank() == 0 else None
             from deepspeed.runtime.zero.stage3 import FP16_DeepSpeedZeroOptimizer_Stage3
+            logger.info(f'backward optimizer: FP16_DeepSpeedZeroOptimizer_Stage3')
             optimizer = FP16_DeepSpeedZeroOptimizer_Stage3(
                 self.module,
                 optimizer,
