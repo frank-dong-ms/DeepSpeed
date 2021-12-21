@@ -1282,21 +1282,21 @@ class DeepSpeedEngine(Module):
 
         return scaled_loss
 
-    def forward(self, *inputs, **kwargs):
+    def forward_2(self, *inputs, **kwargs):
         lp = LineProfiler()
         lp_wrapper = lp(self.forward_internal)
         loss = lp_wrapper(*inputs, **kwargs)
         lp.print_stats()
         return loss
         
-    def backward(self, loss, allreduce_gradients=True, release_loss=False):
+    def backward_2(self, loss, allreduce_gradients=True, release_loss=False):
         lp = LineProfiler()
         lp_wrapper = lp(self.backward_internal)
         loss = lp_wrapper(loss, allreduce_gradients, release_loss)
         lp.print_stats()
         return loss
     
-    def forward_internal(self, *inputs, **kwargs):
+    def forward(self, *inputs, **kwargs):
         r"""Execute forward propagation
 
         Arguments:
@@ -1378,7 +1378,7 @@ class DeepSpeedEngine(Module):
             else:
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
 
-    def backward_internal(self, loss, allreduce_gradients=True, release_loss=False):
+    def backward(self, loss, allreduce_gradients=True, release_loss=False):
         r"""Execute backward pass on the loss
 
         Arguments:
@@ -1422,7 +1422,13 @@ class DeepSpeedEngine(Module):
             self.optimizer.is_gradient_accumulation_boundary = self.is_gradient_accumulation_boundary(
             )
             logger.info(f'self.optimizer:{self.optimizer}...')
-            self.optimizer.backward(loss)
+            logger.info(f"Start profile for backward pass...")
+            lp = LineProfiler()
+            lp_wrapper = lp(self.optimizer.backward)
+            lp_wrapper(loss)
+            lp.print_stats()
+            logger.info(f"Finish profile for backward pass...")
+            # self.optimizer.backward(loss)
         elif self.amp_enabled():
             # AMP requires delaying unscale when inside gradient accumulation boundaries
             # https://nvidia.github.io/apex/advanced.html#gradient-accumulation-across-iterations
