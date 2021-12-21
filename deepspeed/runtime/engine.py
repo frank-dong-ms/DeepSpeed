@@ -1421,6 +1421,7 @@ class DeepSpeedEngine(Module):
         if self.zero_optimization():
             self.optimizer.is_gradient_accumulation_boundary = self.is_gradient_accumulation_boundary(
             )
+            logger.info(f'self.optimizer:{self.optimizer}...')
             self.optimizer.backward(loss)
         elif self.amp_enabled():
             # AMP requires delaying unscale when inside gradient accumulation boundaries
