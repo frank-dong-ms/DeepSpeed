@@ -2984,7 +2984,10 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
                 self.ipg_buffer.append(buf_1)
             self.ipg_index = 0
 
-        self.loss_scaler.backward(loss.float(), retain_graph=retain_graph)
+        loss_float = loss.float()
+        print(f'loss: {loss}')
+        print(f'loss_float: {loss_float}')
+        self.loss_scaler.backward(loss_float, retain_graph=retain_graph)
         '''Partitioning Parameters that were not partitioned
         Usually if parameters of modules whose input parameters do not require
         grad computation do not trigger post call and will therefore will remain unpartitioned '''
