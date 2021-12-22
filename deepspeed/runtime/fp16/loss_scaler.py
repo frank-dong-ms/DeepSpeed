@@ -17,6 +17,7 @@
 #Commit: 93ab4bea59dc5cbf97c079d313741866af4deac9
 
 import torch
+from datetime import datetime
 
 INITIAL_LOSS_SCALE = 'init_scale'
 SCALE_WINDOW = 'scale_window'
@@ -49,6 +50,13 @@ class LossScalerBase:
         pass
 
     def backward(self, loss, retain_graph=False):
+        from line_profiler import LineProfiler
+        lp = LineProfiler()
+        lp_wrapper = lp(self.backward_loss_scale)
+        lp_wrapper(loss, retain_graph)
+        lp.print_stats()
+    
+    def backward_loss_scale(self, loss, retain_graph=False):
         scaled_loss = loss * self.loss_scale
         scaled_loss.backward(retain_graph=retain_graph)
 
@@ -149,6 +157,7 @@ class DynamicLossScaler(LossScalerBase):
 
     # `overflow` is boolean indicating whether the gradient overflowed
     def update_scale(self, overflow):
+        print('entering update_scale...')
         if overflow:
             # self.cur_scale /= self.scale_factor
             if self.delayed_shift == 1 or self.cur_hysteresis == 1:
