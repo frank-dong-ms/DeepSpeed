@@ -916,13 +916,16 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         if self.dtype == torch.float or not dynamic_loss_scale:
             loss_scale_value = 1.0 if self.dtype == torch.float else static_loss_scale
 
+            logger.info(f'backward loss scaler: LossScaler with scale: {loss_scale_value}')
             self.dynamic_loss_scale = False
             self.loss_scaler = LossScaler(scale=loss_scale_value)
             cur_iter = 0
         else:
             if dynamic_loss_args is None:
+                logger.info(f'backward loss scaler: DynamicLossScaler with no loss args')
                 self.loss_scaler = DynamicLossScaler()
             else:
+                logger.info(f'backward loss scaler: DynamicLossScaler with loss args: {dynamic_loss_args}')
                 self.loss_scaler = DynamicLossScaler(**dynamic_loss_args)
 
             self.dynamic_loss_scale = True
