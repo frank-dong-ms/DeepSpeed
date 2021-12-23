@@ -58,6 +58,8 @@ class LossScalerBase:
     
     def backward_loss_scale(self, loss, retain_graph=False):
         scaled_loss = loss * self.loss_scale
+        print(f'scaled_loss: {scaled_loss}, loss: {loss}, loss_scale: {self.loss_scale}')
+        print(f'type of scaled_loss: {type(scaled_loss)}')
         scaled_loss.backward(retain_graph=retain_graph)
 
 
