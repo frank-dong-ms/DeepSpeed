@@ -2985,8 +2985,8 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
             self.ipg_index = 0
 
         loss_float = loss.float()
-        print(f'loss: {loss}')
-        print(f'loss_float: {loss_float}')
+        #print(f'loss: {loss}')
+        #print(f'loss_float: {loss_float}')
         self.loss_scaler.backward(loss_float, retain_graph=retain_graph)
         '''Partitioning Parameters that were not partitioned
         Usually if parameters of modules whose input parameters do not require
