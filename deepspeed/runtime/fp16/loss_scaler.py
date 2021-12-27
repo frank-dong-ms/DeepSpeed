@@ -60,7 +60,11 @@ class LossScalerBase:
         scaled_loss = loss * self.loss_scale
         print(f'scaled_loss: {scaled_loss}, loss: {loss}, loss_scale: {self.loss_scale}')
         print(f'type of scaled_loss: {type(scaled_loss)}')
-        scaled_loss.backward(retain_graph=retain_graph)
+        from torch.profiler import profile, record_function, ProfilerActivity
+        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+            with record_function("backward_loss_scale"):
+                scaled_loss.backward(retain_graph=retain_graph)
+        print(prof.key_averages().table(sort_by="cpu_time_total", row_limit=100))
 
 
 class LossScaler(LossScalerBase):
