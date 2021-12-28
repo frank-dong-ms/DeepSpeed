@@ -553,14 +553,18 @@ class PreBackwardFunction(torch.autograd.Function):
         if not hasattr(module, "applied_pre_backward_ref_cnt"):
             module.applied_pre_backward_ref_cnt = 0
         module.applied_pre_backward_ref_cnt += 1
-        print(f"After Forward: {ctx.module.__class__.__name__}")
+        #print(f"After Forward: {ctx.module.__class__.__name__}")
         outputs = outputs.detach()
         return outputs
 
     @staticmethod
     def backward(ctx, *args):
-        print(f"Before Backward: {ctx.module.__class__.__name__}")
+        from datetime import datetime
+        backward_start_time = datetime.now()
+        #print(f"Before Backward: {ctx.module.__class__.__name__}")
         ctx.pre_backward_function(ctx.module)
+        spent_time = datetime.now() - backward_start_time
+        print(f"Backward function {ctx.pre_backward_function} on module {ctx.module.__class__.__name__} spent {spent_time}...")
         return (None, None) + args
 
 
@@ -1492,11 +1496,11 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
                 # some models (e.g. Albert) may run multiple forwards on the same layer in a loop
                 # before doing backwards, so each backward will need a pre-fetch - using reference
                 # counting to support this scenario
-                print(f"COUNTER before: {sub_module.applied_pre_backward_ref_cnt}")
+                #print(f"COUNTER before: {sub_module.applied_pre_backward_ref_cnt}")
                 if sub_module.applied_pre_backward_ref_cnt > 0:
                     self.pre_sub_module_backward_function(sub_module)
                     sub_module.applied_pre_backward_ref_cnt -= 1
-                print(f"COUNTER after: {sub_module.applied_pre_backward_ref_cnt}")
+                #print(f"COUNTER after: {sub_module.applied_pre_backward_ref_cnt}")
 
             return _apply_to_tensors_only(module,
                                           PreBackwardFunction,
