@@ -564,7 +564,8 @@ class PreBackwardFunction(torch.autograd.Function):
         #print(f"Before Backward: {ctx.module.__class__.__name__}")
         ctx.pre_backward_function(ctx.module)
         spent_time = datetime.now() - backward_start_time
-        print(f"Backward function {ctx.pre_backward_function} on module {ctx.module.__class__.__name__} spent {spent_time}...")
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 3:
+            print(f"Backward function {ctx.pre_backward_function} on module {ctx.module.__class__.__name__} spent {spent_time}...")
         return (None, None) + args
 
 
