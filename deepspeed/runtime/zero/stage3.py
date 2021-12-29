@@ -1590,14 +1590,40 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
             force=False)
 
     def pre_sub_module_backward_function(self, sub_module):
+        from line_profiler import LineProfiler
+        from datetime import datetime
+        
         self.param_coordinator.record_trace(sub_module)
 
-        self.param_coordinator.fetch_sub_module(sub_module)
+        backward_start_time = datetime.now()
+        lp = LineProfiler()
+        lp_wrapper = lp(self.param_coordinator.fetch_sub_module)
+        lp_wrapper(sub_module)
+        spent_time = datetime.now() - backward_start_time
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
+            lp.print_stats()
 
-        self.param_coordinator.prefetch_next_sub_modules(sub_module,
-                                                         numel=self.prefetch_elements)
+        #self.param_coordinator.fetch_sub_module(sub_module)
+        
+        lp = LineProfiler()
+        backward_start_time = datetime.now()
+        lp_wrapper = lp(self.param_coordinator.prefetch_next_sub_modules)
+        lp_wrapper(sub_module, numel=self.prefetch_elements)
+        spent_time = datetime.now() - backward_start_time
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
+            lp.print_stats()
 
-        self.param_coordinator.increment_step(sub_module)
+        #self.param_coordinator.prefetch_next_sub_modules(sub_module, numel=self.prefetch_elements)
+
+        lp = LineProfiler()
+        backward_start_time = datetime.now()
+        lp_wrapper = lp(self.param_coordinator.increment_step)
+        lp_wrapper(sub_module)
+        spent_time = datetime.now() - backward_start_time
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
+            lp.print_stats()
+            
+        #self.param_coordinator.increment_step(sub_module)
 
     def post_sub_module_backward_function(self, sub_module):
         see_memory_usage(
