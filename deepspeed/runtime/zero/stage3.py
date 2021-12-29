@@ -1607,7 +1607,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         
         lp = LineProfiler()
         backward_start_time = datetime.now()
-        lp.add_function(self.prefetch_coordinator.get_params_to_prefetch)
+        lp.add_function(self.param_coordinator.prefetch_coordinator.get_params_to_prefetch)
         lp_wrapper = lp(self.param_coordinator.prefetch_next_sub_modules)
         lp_wrapper(sub_module, numel=self.prefetch_elements)
         spent_time = datetime.now() - backward_start_time
