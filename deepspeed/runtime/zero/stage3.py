@@ -3012,7 +3012,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         #print(f'loss: {loss}')
         #print(f'loss_float: {loss_float}')
         if torch.distributed.get_rank() == 0:
-            print(f'id_to_sub_module_map: {self.param_coordinator.prefetch_coordinator.id_to_sub_module_map}', true)
+            print(f'id_to_sub_module_map: {self.param_coordinator.prefetch_coordinator.id_to_sub_module_map}', True)
         self.loss_scaler.backward(loss_float, retain_graph=retain_graph)
         '''Partitioning Parameters that were not partitioned
         Usually if parameters of modules whose input parameters do not require
