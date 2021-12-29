@@ -1600,7 +1600,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         lp_wrapper = lp(self.param_coordinator.fetch_sub_module)
         lp_wrapper(sub_module)
         spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
+        if torch.distributed.get_rank() == 0:
             lp.print_stats()
 
         #self.param_coordinator.fetch_sub_module(sub_module)
@@ -1610,7 +1610,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         lp_wrapper = lp(self.param_coordinator.prefetch_next_sub_modules)
         lp_wrapper(sub_module, numel=self.prefetch_elements)
         spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
+        if torch.distributed.get_rank() == 0:
             lp.print_stats()
 
         #self.param_coordinator.prefetch_next_sub_modules(sub_module, numel=self.prefetch_elements)
@@ -1620,7 +1620,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         lp_wrapper = lp(self.param_coordinator.increment_step)
         lp_wrapper(sub_module)
         spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
+        if torch.distributed.get_rank() == 0:
             lp.print_stats()
             
         #self.param_coordinator.increment_step(sub_module)
