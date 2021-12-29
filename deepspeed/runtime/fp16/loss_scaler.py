@@ -50,14 +50,12 @@ class LossScalerBase:
         pass
 
     def backward(self, loss, retain_graph=False):
+        from line_profiler import LineProfiler
+        lp = LineProfiler()
+        lp_wrapper = lp(self.backward_loss_scale)
+        lp_wrapper(loss, retain_graph)
         if torch.distributed.get_rank() == 0:
-            from line_profiler import LineProfiler
-            lp = LineProfiler()
-            lp_wrapper = lp(self.backward_loss_scale)
-            lp_wrapper(loss, retain_graph)
             lp.print_stats()
-        else:
-            self.backward_loss_scale(loss, retain_graph)
     
     def backward_loss_scale(self, loss, retain_graph=False):
         scaled_loss = loss * self.loss_scale
