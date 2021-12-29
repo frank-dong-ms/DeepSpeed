@@ -1600,7 +1600,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         lp_wrapper = lp(self.param_coordinator.fetch_sub_module)
         lp_wrapper(sub_module)
         spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0:
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds > 1:
             lp.print_stats()
 
         #self.param_coordinator.fetch_sub_module(sub_module)
@@ -1610,20 +1610,12 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         lp_wrapper = lp(self.param_coordinator.prefetch_next_sub_modules)
         lp_wrapper(sub_module, numel=self.prefetch_elements)
         spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0:
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds > 1:
             lp.print_stats()
 
         #self.param_coordinator.prefetch_next_sub_modules(sub_module, numel=self.prefetch_elements)
-
-        lp = LineProfiler()
-        backward_start_time = datetime.now()
-        lp_wrapper = lp(self.param_coordinator.increment_step)
-        lp_wrapper(sub_module)
-        spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0:
-            lp.print_stats()
             
-        #self.param_coordinator.increment_step(sub_module)
+        self.param_coordinator.increment_step(sub_module)
 
     def post_sub_module_backward_function(self, sub_module):
         see_memory_usage(
@@ -3018,6 +3010,8 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         loss_float = loss.float()
         #print(f'loss: {loss}')
         #print(f'loss_float: {loss_float}')
+        if torch.distributed.get_rank() == 0:
+            print(f'self.id_to_sub_module_map: {self.id_to_sub_module_map}', true)
         self.loss_scaler.backward(loss_float, retain_graph=retain_graph)
         '''Partitioning Parameters that were not partitioned
         Usually if parameters of modules whose input parameters do not require
