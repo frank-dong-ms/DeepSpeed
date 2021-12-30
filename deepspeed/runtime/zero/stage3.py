@@ -1611,7 +1611,7 @@ class FP16_DeepSpeedZeroOptimizer_Stage3(object):
         lp_wrapper = lp(self.param_coordinator.prefetch_next_sub_modules)
         lp_wrapper(sub_module, numel=self.prefetch_elements)
         spent_time = datetime.now() - backward_start_time
-        if torch.distributed.get_rank() == 0:
+        if torch.distributed.get_rank() == 0 and spent_time.total_seconds() > 1:
             lp.print_stats()
 
         #self.param_coordinator.prefetch_next_sub_modules(sub_module, numel=self.prefetch_elements)
