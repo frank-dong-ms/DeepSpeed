@@ -1473,6 +1473,7 @@ class DeepSpeedEngine(Module):
             # loss.data = None
             pass
         
+        print(f'Finish backward from deepspeed engine...')
         return loss
 
     def is_gradient_accumulation_boundary(self):
