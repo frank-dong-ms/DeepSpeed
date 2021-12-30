@@ -1461,7 +1461,9 @@ class DeepSpeedEngine(Module):
             self.timers('backward_allreduce').start()
 
         if self.enable_backward_allreduce:
+            logger.info(f"Start allreduce_gradients...")
             self.allreduce_gradients()
+            logger.info(f"Finish allreduce_gradients...")
 
         if self.wall_clock_breakdown():
             self.timers('backward_allreduce').stop()
