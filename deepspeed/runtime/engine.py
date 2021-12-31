@@ -1567,6 +1567,7 @@ class DeepSpeedEngine(Module):
         r"""Execute the weight update step after forward and backward propagation
         on effective_train_batch.
         """
+        print(f'start step on deepspeed engine...')
         if self.wall_clock_breakdown():
             self.timers('step_microstep').start()
             self.timers('step').start()
@@ -1579,6 +1580,7 @@ class DeepSpeedEngine(Module):
 
         # Update the model when we reach gradient accumulation boundaries
         if self.is_gradient_accumulation_boundary():
+            print(f'Update the model when we reach gradient accumulation boundaries...')
             self.gas_boundary_ctr += 1
 
             if self.eigenvalue_enabled() and (
@@ -1604,6 +1606,7 @@ class DeepSpeedEngine(Module):
 
         # Log learning rate
         if self.tensorboard_enabled():
+            print(f'log learning rate...')
             if self.is_gradient_accumulation_boundary():
                 if self.global_rank == 0:
                     self.summary_events = [(f'Train/Samples/lr',
@@ -1632,6 +1635,7 @@ class DeepSpeedEngine(Module):
                     self.summary_writer.flush()
 
         if self.wall_clock_breakdown():
+            print(f'wall clock breakdown...')
             self.timers('step').stop()
             self.timers('step_microstep').stop()
             timer_names = [
@@ -1682,6 +1686,7 @@ class DeepSpeedEngine(Module):
                                 reset=False)
 
         self.micro_steps += 1
+        print(f'finish step in deepspeed engine...')
 
     def _get_optimizer_param(self, param_name):
         result = []
