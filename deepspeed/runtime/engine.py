@@ -1587,22 +1587,33 @@ class DeepSpeedEngine(Module):
             if self.eigenvalue_enabled() and (
                     self.gas_boundary_ctr % self.eigenvalue_gas_boundary_resolution() ==
                     0) and self.quantizer.any_precision_switch():
+                print(f'computing eigenvalue...')
                 log_dist(f'computing eigenvalue...', ranks=[0])
                 self.block_eigenvalue = self.eigenvalue.compute_eigenvalue(
                     self.module,
                     self.device,
                     self.optimizer.cur_scale)
+                print(f'finish compute eigenvalue...')
 
             if self.progressive_layer_drop:
+                print(f'update progressive state...')
                 self.progressive_layer_drop.update_state(self.global_steps)
+                print(f'finish update progressive state...')
 
             if self.eigenvalue_enabled(
             ) and not self.gas_boundary_ctr % self.eigenvalue_gas_boundary_resolution(
             ) and self.quantizer.any_precision_switch():
+                print(f'if model step...')
                 self._take_model_step(lr_kwargs, self.block_eigenvalue)
+                print(f'finish if model step...')
             else:
+                print(f'else model step...')
                 self._take_model_step(lr_kwargs)
+                print(f'finish else model step...')
+                
+            print(f'Finish update the model when we reach gradient accumulation boundaries...')
 
+        print(f'Finish first if condition...')
         self.tput_timer.stop(report_progress)
 
         # Log learning rate
