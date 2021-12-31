@@ -1475,6 +1475,9 @@ class DeepSpeedEngine(Module):
             # loss.data = None
             pass
         
+        import traceback
+        traceback.print_stack(file=sys.stdout)
+        print(f'loss from deepspeed is: {loss}')
         print(f'Finish backward from deepspeed engine...')
         return loss
 
