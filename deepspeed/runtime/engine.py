@@ -1430,7 +1430,9 @@ class DeepSpeedEngine(Module):
             #lp_wrapper = lp(self.optimizer.backward)
             #lp_wrapper(loss)
             #lp.print_stats()
+            logger.info(f"loss before backward is: {loss.float()}...")
             self.optimizer.backward(loss)
+            logger.info(f"loss after backward is: {loss.float()}...")
             logger.info(f"Finish profile for backward pass...")
             
         elif self.amp_enabled():
