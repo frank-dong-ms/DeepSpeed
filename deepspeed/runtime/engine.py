@@ -1506,7 +1506,9 @@ class DeepSpeedEngine(Module):
                         mpu=self.mpu)
 
     def _take_model_step(self, lr_kwargs, block_eigenvalue={}):
+        print(f'deepspeed model step starts...')
         if self.gradient_clipping() > 0.0:
+            print(f'gradient_clipping() > 0.0...')
             if not (self.fp16_enabled() or self.amp_enabled()
                     or self.zero_optimization()):
                 self.clip_fp32_gradients()
@@ -1517,25 +1519,31 @@ class DeepSpeedEngine(Module):
                 clip_grad_norm_(parameters=master_params,
                                 max_norm=self.gradient_clipping(),
                                 mpu=self.mpu)
+        print(f'start optimizer step...')
         self.optimizer.step()
+        print(f'finish optimizer step...')
 
         if hasattr(self.optimizer, '_global_grad_norm'):
             self._global_grad_norm = self.optimizer._global_grad_norm
 
         # Quantize the updated parameter if there is no overflow
         if self.quantizer:
+            print(f'start quantize...')
             self.quantizer.quantize(
                 (self.optimizer.fp16_groups
                  if self.fp16_enabled() else self.optimizer.param_groups),
                 (self.optimizer.overflow if self.fp16_enabled() else False),
                 self.eigenvalue_enabled(),
                 block_eigenvalue)
+            print(f'finish quantize...')
         #zero grad in basic optimizer could be unreliable and may not exhibit
         #the behaviour that we want
         if not self.zero_optimization() and not self.fp16_enabled(
         ) and not self.amp_enabled():
+            print(f'start zero grad...')
             self.zero_grad()
         else:
+            print(f'start optimizer zero grad...')
             self.optimizer.zero_grad()
 
         report_progress = self.global_rank == 0 if self.global_rank else True
@@ -1547,15 +1555,18 @@ class DeepSpeedEngine(Module):
         self._step_applied = not overflow
 
         if overflow:
+            print(f'overflow...')
             self.skipped_steps += 1
         else:
             if self.lr_scheduler is not None:
                 try:
+                    print(f'start lr_scheduler.step...')
                     self.lr_scheduler.step(**(lr_kwargs or {}))
                 except TypeError:
                     # XXX Hack to work with Megatron 2.0 and DeepSpeed pipelines.
                     # We don't currently have a way to specify lr_kwargs from
                     # pipe_engine.train_batch()
+                    print(f'except lr_scheduler.step...')
                     self.lr_scheduler.step(increment=self.train_batch_size())
 
         if report_progress and (self.global_steps + 1) % self.steps_per_print() == 0:
@@ -1563,6 +1574,7 @@ class DeepSpeedEngine(Module):
 
         self.global_steps += 1
         self.global_samples += self.train_batch_size()
+        print(f'deepspeed model step completes...')
 
     def step(self, lr_kwargs=None):
         r"""Execute the weight update step after forward and backward propagation
