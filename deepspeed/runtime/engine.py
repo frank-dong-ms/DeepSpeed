@@ -1370,18 +1370,26 @@ class DeepSpeedEngine(Module):
         # Pass (PP) gas boundary flag to optimizer (required for zero)
         self.optimizer.is_gradient_accumulation_boundary = self.is_gradient_accumulation_boundary(
         )
+        
+        print(f'self.optimizer.is_gradient_accumulation_boundary: {self.optimizer.is_gradient_accumulation_boundary}...')
 
         # ZeRO stage 2 communicates during non gradient accumulation boundaries as well
         if self.zero_optimization_partition_gradients():
+            print(f'starts self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
             self.optimizer.overlapping_partition_gradients_reduce_epilogue()
+            print(f'finish self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
 
         # Communicate only at gradient accumulation boundaries
         elif self.is_gradient_accumulation_boundary():
             if self.zero_optimization_stage() == ZERO_OPTIMIZATION_OPTIMIZER_STATES:
+                print(f'starts self.optimizer.reduce_gradients()...')
                 self.optimizer.reduce_gradients(
                     pipeline_parallel=self.pipeline_parallelism)
+                print(f'finish self.optimizer.reduce_gradients()...')
             else:
+                print(f'starts self.buffered_allreduce_fallback()...')
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
+                print(f'finishes self.buffered_allreduce_fallback()...')
 
     def backward(self, loss, allreduce_gradients=True, release_loss=False):
         r"""Execute backward pass on the loss
