@@ -1614,6 +1614,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
         # First compute norm for all group so we know if there is overflow
         print(f'start step of stage2 optimizer, check overflow...')
         self.check_overflow()
+        print(f'start step of stage2 optimizer, finish check overflow...')
 
         OPTIMIZER_ALLGATHER = 'optimizer_allgather'
         OPTIMIZER_GRADIENTS = 'optimizer_gradients'
@@ -1823,15 +1824,20 @@ class FP16_DeepSpeedZeroOptimizer(object):
         return False
 
     def has_overflow(self, partition_gradients=True):
+        print(f'start has_overflow with partition_gradients: {partition_gradients}...')
         if partition_gradients:
+            print(f'start has_overflow in partition_gradients...')
             overflow = self.local_overflow if self.cpu_offload else self.has_overflow_partitioned_grads_serial(
             )
+            print(f'overflow is {overflow}')
             overflow_gpu = torch.cuda.ByteTensor([overflow])
+            print(f'overflow_gpu is {overflow_gpu}')
             '''This will capture overflow across all data parallel and expert parallel process
             Since expert parallel process are a subset of data parallel process'''
             torch.distributed.all_reduce(overflow_gpu,
                                          op=torch.distributed.ReduceOp.MAX,
                                          group=self.dp_process_group)
+            print(f'finish all_reduce...')
 
         else:
             params = []
@@ -1848,6 +1854,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
                                         op=torch.distributed.ReduceOp.MAX)
 
         overflow = overflow_gpu[0].item()
+        print(f'overflow result is {bool(overflow)}...')
         return bool(overflow)
 
     # `x` is a torch.Tensor
