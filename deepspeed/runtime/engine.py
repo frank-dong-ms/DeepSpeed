@@ -883,6 +883,7 @@ class DeepSpeedEngine(Module):
                         "**** You are using ZeRO with an untested optimizer, proceed with caution *****"
                     )
             self.optimizer = self._configure_zero_optimizer(basic_optimizer)
+            logger.info(f'self.optimizer1:{self.optimizer}...')
         elif self.amp_enabled():
             assert not self.fp16_enabled(), "Cannot enable both amp with (legacy) fp16 mode"
             amp_params = self.amp_params()
@@ -905,6 +906,7 @@ class DeepSpeedEngine(Module):
                  ranks=[0])
 
         self.quantizer = self._configure_quantization()
+        logger.info(f'self.optimizer2:{self.optimizer}...')
 
     def _configure_basic_optimizer(self, model_parameters):
         optimizer_parameters = self.optimizer_params()
