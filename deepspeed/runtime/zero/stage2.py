@@ -1606,11 +1606,13 @@ class FP16_DeepSpeedZeroOptimizer(object):
         """
         Not supporting closure.
         """
+        print(f'start step of stage2 optimizer...')
         self.micro_step_id = -1
 
         see_memory_usage(f"In step before checking overflow")
 
         # First compute norm for all group so we know if there is overflow
+        print(f'start step of stage2 optimizer, check overflow...')
         self.check_overflow()
 
         OPTIMIZER_ALLGATHER = 'optimizer_allgather'
@@ -1619,8 +1621,10 @@ class FP16_DeepSpeedZeroOptimizer(object):
         timer_names = [OPTIMIZER_ALLGATHER, OPTIMIZER_GRADIENTS, OPTIMIZER_STEP]
 
         prev_scale = self.loss_scale
+        print(f'start step of stage2 optimizer, update scale...')
         self._update_scale(self.overflow)
         if self.overflow:
+            print(f'start step of stage2 optimizer, handle overflow...')
             see_memory_usage('After overflow before clearing gradients')
             self.zero_grad()
             if self.cpu_offload:
@@ -1632,6 +1636,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
             self.start_timers(timer_names)
             self.stop_timers(timer_names)
+            print(f'start step of stage2 optimizer, finish handle overflow, return...')
             return
 
         self.start_timers([OPTIMIZER_GRADIENTS])
@@ -1639,6 +1644,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
         single_partition_grad_groups = []
         skip = False
         for i, group in enumerate(self.fp16_groups):
+            print(f'start step of stage2 optimizer, handle group {i}...')
             partition_id = dist.get_rank(group=self.real_dp_process_group[i])
             if self.cpu_offload:
                 norm_groups.append(
@@ -1676,15 +1682,19 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
             single_partition_grad_groups.append(single_grad_partition)
 
+        print(f'start step of stage2 optimizer, finish handle all groups...')
         if self.has_moe_layers:
             self._average_expert_grad_norms(norm_groups)
 
         self._global_grad_norm = get_global_norm(norm_list=norm_groups)
         self.unscale_and_clip_grads(single_partition_grad_groups, self._global_grad_norm)
         self.stop_timers([OPTIMIZER_GRADIENTS])
+        
+        print(f'start step of stage2 optimizer, finish handle gradients...')
 
         self.start_timers([OPTIMIZER_STEP])
         if self.deepspeed_adam_offload:
+            print(f'start step of stage2 optimizer, deepspeed adam offload...')
             from deepspeed.ops.adam import DeepSpeedCPUAdam
             if type(self.optimizer) == DeepSpeedCPUAdam and self.dtype == torch.half:
                 fp16_param_groups = [
@@ -1697,7 +1707,10 @@ class FP16_DeepSpeedZeroOptimizer(object):
                 for fp16_partitions, fp32_partition in zip(self.parallel_partitioned_fp16_groups, self.single_partition_of_fp32_groups):
                     fp16_partitions[partition_id].data.copy_(fp32_partition.data)
         else:
+            print(f'start step of stage2 optimizer, optimizer step inside...')
+            print(f'optimizer inside stage2 optimizer is self.optimizer:{self.optimizer}...')
             self.optimizer.step()
+            print(f'start step of stage2 optimizer, finish optimizer step inside...')
 
             # get rid of the fp32 gradients. Not needed anymore
             if not self.cpu_offload:
@@ -1713,9 +1726,11 @@ class FP16_DeepSpeedZeroOptimizer(object):
             self.reset_cpu_buffers()
 
         self.start_timers([OPTIMIZER_ALLGATHER])
+        print(f'start step of stage2 optimizer, start allgather...')
         # gather the updated weights from everyone
         for group_id, partitioned_params in enumerate(self.parallel_partitioned_fp16_groups):
-
+            
+            print(f'start step of stage2 optimizer, start allgather for group {group_id}...')
             # Sequential AllGather Best of both worlds
             dp_world_size = dist.get_world_size(
                 group=self.real_dp_process_group[group_id])
@@ -1747,14 +1762,18 @@ class FP16_DeepSpeedZeroOptimizer(object):
                                 shard_list[partition_id],
                                 group=self.real_dp_process_group[group_id])
         self.stop_timers([OPTIMIZER_ALLGATHER])
+        print(f'start step of stage2 optimizer, finish allgather...')
 
         # TODO: we probably don't need this? just to be safe
         for i in range(len(norm_groups)):
             self._update_model_fp16_weights(i)
+            
+        print(f'start step of stage2 optimizer, finish update model weights...')
 
         self.log_timers(timer_names)
         see_memory_usage('After zero_optimizer step')
 
+        print(f'finish step of stage2 optimizer...')
         return
 
     def _average_expert_grad_norms(self, norm_groups):
