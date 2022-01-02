@@ -1457,11 +1457,14 @@ class FP16_DeepSpeedZeroOptimizer(object):
         """ Perform all reduce within model parallel group, if any.
         """
         if self.model_parallel_group is None:
+            print(f'pass in _model_parallel_all_reduce...')
             pass
         else:
+            print(f'starts torch.distributed.all_reduce...')
             torch.distributed.all_reduce(tensor=tensor,
                                          op=op,
                                          group=self.model_parallel_group)
+            print(f'finishes torch.distributed.all_reduce...')
 
     def get_grad_norm_direct(self, gradients, params, norm_type=2):
         """Clips gradient norm of an iterable of parameters.
@@ -1850,8 +1853,10 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         # Since each model parallel GPU carries only part of the model,
         # make sure overflow flag is synced across all the model parallel GPUs
+        print(f'starts self._model_parallel_all_reduce...')
         self._model_parallel_all_reduce(tensor=overflow_gpu,
                                         op=torch.distributed.ReduceOp.MAX)
+        print(f'finishes self._model_parallel_all_reduce...')
 
         overflow = overflow_gpu[0].item()
         print(f'overflow result is {bool(overflow)}...')
