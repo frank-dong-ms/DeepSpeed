@@ -229,7 +229,9 @@ class PrefetchCoordinator(object):
 
         for i in range(self.step_id, len(self.sub_module_trace)):
             module_id = self.sub_module_trace[i]
+            num_parameters = 0
             for _, param in get_all_parameters(self.id_to_sub_module_map[module_id]):
+                num_parameters += 1
                 if param.ds_status is ZeroParamStatus.NOT_AVAILABLE and (
                         param.ds_id not in [p.ds_id for p in params_to_prefetch]):
                     params_to_prefetch.append(param)
@@ -237,6 +239,7 @@ class PrefetchCoordinator(object):
                     #print_rank_0(f"Total numel to prefetch: {total_numel_to_prefetch}. Param: {param.ds_shape} and numel {param.ds_numel}, numel limit {numel}")
                     if total_numel_to_prefetch >= numel:  # and total_numel_to_prefetch > (numel_in_sub_module // 2):
                         return params_to_prefetch
+            print(f'module with id {module_id} has {num_parameters} parameters...')
 
         return params_to_prefetch
 
