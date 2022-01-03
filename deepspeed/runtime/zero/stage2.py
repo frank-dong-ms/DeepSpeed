@@ -1841,7 +1841,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
                                          op=torch.distributed.ReduceOp.MAX,
                                          group=self.dp_process_group)
             print(f'finish all_reduce...')
-
+            print(f'overflow result is {bool(overflow_gpu[0].item())}...')
         else:
             params = []
             for group in self.fp16_groups:
