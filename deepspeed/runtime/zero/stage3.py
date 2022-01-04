@@ -239,7 +239,7 @@ class PrefetchCoordinator(object):
                     #print_rank_0(f"Total numel to prefetch: {total_numel_to_prefetch}. Param: {param.ds_shape} and numel {param.ds_numel}, numel limit {numel}")
                     if total_numel_to_prefetch >= numel:  # and total_numel_to_prefetch > (numel_in_sub_module // 2):
                         return params_to_prefetch
-            print(f'module with id {module_id} has {num_parameters} parameters...')
+            #print(f'module with id {module_id} has {num_parameters} parameters...')
 
         return params_to_prefetch
 
