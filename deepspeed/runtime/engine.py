@@ -1378,9 +1378,9 @@ class DeepSpeedEngine(Module):
         
         # ZeRO stage 2 communicates during non gradient accumulation boundaries as well
         if self.zero_optimization_partition_gradients():
-            print(f'starts self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
+            print(f'rank {torch.distributed.get_rank()} starts self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
             self.optimizer.overlapping_partition_gradients_reduce_epilogue()
-            print(f'finish self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
+            print(f'rank {torch.distributed.get_rank()} finish self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
 
         # Communicate only at gradient accumulation boundaries
         elif self.is_gradient_accumulation_boundary():
