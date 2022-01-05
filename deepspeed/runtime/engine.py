@@ -1398,6 +1398,7 @@ class DeepSpeedEngine(Module):
             loss: Torch tensor on which to execute backward propagation
             allreduce_gradients: is deprecated, ignored, and will soon be removed'
         """
+        print(f'rank {torch.distributed.get_rank()} starts backward on deepspeed engine...')
         if not allreduce_gradients:
             logger.warning(
                 f'Argument `allreduce_gradients` is deprecated, ignored, and will soon be removed'
@@ -1434,16 +1435,16 @@ class DeepSpeedEngine(Module):
         if self.zero_optimization():
             self.optimizer.is_gradient_accumulation_boundary = self.is_gradient_accumulation_boundary(
             )
-            logger.info(f'self.optimizer:{self.optimizer}...')
-            logger.info(f"Start profile for backward pass...")
+            print(f'rank {torch.distributed.get_rank()} self.optimizer:{self.optimizer}...')
+            print(f"rank {torch.distributed.get_rank()} Start profile for backward pass...")
             #lp = LineProfiler()
             #lp_wrapper = lp(self.optimizer.backward)
             #lp_wrapper(loss)
             #lp.print_stats()
-            logger.info(f"loss before backward is: {loss.float()}...")
+            print(f"rank {torch.distributed.get_rank()} loss before backward is: {loss.float()}...")
             self.optimizer.backward(loss)
-            logger.info(f"loss after backward is: {loss.float()}...")
-            logger.info(f"Finish profile for backward pass...")
+            print(f"rank {torch.distributed.get_rank()} loss after backward is: {loss.float()}...")
+            print(f"rank {torch.distributed.get_rank()} Finish profile for backward pass...")
             
         elif self.amp_enabled():
             # AMP requires delaying unscale when inside gradient accumulation boundaries
@@ -1473,9 +1474,9 @@ class DeepSpeedEngine(Module):
             self.timers('backward_allreduce').start()
 
         if self.enable_backward_allreduce:
-            logger.info(f"Start allreduce_gradients...")
+            print(f"rank {torch.distributed.get_rank()} Start allreduce_gradients...")
             self.allreduce_gradients()
-            logger.info(f"Finish allreduce_gradients...")
+            print(f"rank {torch.distributed.get_rank()} Finish allreduce_gradients...")
 
         if self.wall_clock_breakdown():
             self.timers('backward_allreduce').stop()
@@ -1487,9 +1488,9 @@ class DeepSpeedEngine(Module):
             # loss.data = None
             pass
         
-        print(f'loss float from deepspeed is: {loss.float()}')
-        print(f'loss from deepspeed is: {loss}')
-        print(f'Finish backward from deepspeed engine...')
+        print(f'rank {torch.distributed.get_rank()} loss float from deepspeed is: {loss.float()}')
+        print(f'rank {torch.distributed.get_rank()} loss from deepspeed is: {loss}')
+        print(f'rank {torch.distributed.get_rank()} Finish backward from deepspeed engine...')
         return loss
 
     def is_gradient_accumulation_boundary(self):
