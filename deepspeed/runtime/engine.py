@@ -1368,11 +1368,14 @@ class DeepSpeedEngine(Module):
 
     def allreduce_gradients(self, bucket_size=MEMORY_OPT_ALLREDUCE_SIZE):
         # Pass (PP) gas boundary flag to optimizer (required for zero)
+        print(f'rank {torch.distributed.get_rank()} start allreduce_gradients...')
         self.optimizer.is_gradient_accumulation_boundary = self.is_gradient_accumulation_boundary(
         )
         
-        print(f'self.optimizer.is_gradient_accumulation_boundary: {self.optimizer.is_gradient_accumulation_boundary}...')
-
+        print(f'rank {torch.distributed.get_rank()} self.optimizer.is_gradient_accumulation_boundary: {self.optimizer.is_gradient_accumulation_boundary}...')
+        print(f'rank {torch.distributed.get_rank()} self.zero_optimization_partition_gradients(): {self.zero_optimization_partition_gradients()}...')
+        print(f'rank {torch.distributed.get_rank()} self.is_gradient_accumulation_boundary(): {self.is_gradient_accumulation_boundary()}...')
+        
         # ZeRO stage 2 communicates during non gradient accumulation boundaries as well
         if self.zero_optimization_partition_gradients():
             print(f'starts self.optimizer.overlapping_partition_gradients_reduce_epilogue()...')
@@ -1391,6 +1394,8 @@ class DeepSpeedEngine(Module):
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
                 print(f'finishes self.buffered_allreduce_fallback()...')
 
+        print(f'rank {torch.distributed.get_rank()} finish allreduce_gradients...')
+        
     def backward(self, loss, allreduce_gradients=True, release_loss=False):
         r"""Execute backward pass on the loss
 
