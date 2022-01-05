@@ -562,6 +562,9 @@ class FP16_DeepSpeedZeroOptimizer(object):
     #########################################################################
 
     def reduce_gradients(self, pipeline_parallel=False):
+        print(f'rank {torch.distributed.get_rank()} starts reduce_gradients...')
+        print(f'rank {torch.distributed.get_rank()} pipeline_parallel: {pipeline_parallel}, world_size: {world_size}, my_rank: {my_rank}')
+        print(f'rank {torch.distributed.get_rank()} self.contiguous_gradients: {self.contiguous_gradients}, self.overlap_comm: {self.overlap_comm}')
         world_size = dist.get_world_size(self.dp_process_group)
         my_rank = dist.get_rank(self.dp_process_group)
 
@@ -582,6 +585,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         # reduce any pending grads in either hook/non-hook case
         self.overlapping_partition_gradients_reduce_epilogue()
+        
+        print(f'rank {torch.distributed.get_rank()} finish reduce_gradients...')
 
     #########################################################################
     #########################ZeRO Partition Gradients########################
@@ -623,12 +628,16 @@ class FP16_DeepSpeedZeroOptimizer(object):
                         partition_id)
 
     def independent_gradient_partition_epilogue(self):
+        print(f'rank {torch.distributed.get_rank()} starts independent_gradient_partition_epilogue...')
+        
         self.report_ipg_memory_usage(f"In ipg_epilogue before reduce_ipg_grads", 0)
         self.reduce_ipg_grads()
         self.report_ipg_memory_usage(f"In ipg_epilogue after reduce_ipg_grads", 0)
 
         # if dist.get_rank() == 0:
         #    logger.info("Params already reduced %s", self.params_already_reduced)
+        print(f'rank {torch.distributed.get_rank()} Params already reduced {self.params_already_reduced}')
+        
         for i in range(len(self.params_already_reduced)):
             self.params_already_reduced[i] = False
 
@@ -637,6 +646,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
             # It is safe to clear previously reduced grads of other partitions
             self._clear_previous_reduced_grads()
 
+        print(f'rank {torch.distributed.get_rank()} self.cpu_offload {self.cpu_offload}')
         if self.cpu_offload is False:
             for i, _ in enumerate(self.fp16_groups):
 
@@ -666,6 +676,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
         # are in self.averaged_gradients
         self.zero_grad()
         see_memory_usage(f"End ipg_epilogue")
+        print(f'rank {torch.distributed.get_rank()} finishes independent_gradient_partition_epilogue...')
 
     # resets all partition to no reduced
     # sets remaining grads to the total number of grads in each partition
@@ -786,6 +797,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
     ############### Independent Partition Gradient ########################
     def reduce_independent_p_g_buckets_and_remove_grads(self, param, i):
+        print(f'rank {torch.distributed.get_rank()} starts reduce_independent_p_g_buckets_and_remove_grads...')
+        
         if self.elements_in_ipg_bucket + param.numel() > self.reduce_bucket_size:
             self.report_ipg_memory_usage("In ipg_remove_grads before reduce_ipg_grads",
                                          param.numel())
@@ -826,6 +839,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
             self.ipg_bucket_has_moe_params = True
 
         self.report_ipg_memory_usage("End ipg_remove_grads", 0)
+        
+        print(f'rank {torch.distributed.get_rank()} finishes reduce_independent_p_g_buckets_and_remove_grads...')
 
     def print_rank_0(self, message):
         if dist.get_rank() == 0:
