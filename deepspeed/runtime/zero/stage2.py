@@ -1839,6 +1839,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
             Since expert parallel process are a subset of data parallel process'''
             print(f'start all_reduce...')
             print(f'distributed backend is {torch.distributed.get_backend(self.dp_process_group)}...')
+            torch.distributed.barrier(group=self.dp_process_group)
+            torch.cuda.synchronize()
             torch.distributed.all_reduce(overflow_gpu,
                                          op=torch.distributed.ReduceOp.MAX,
                                          group=self.dp_process_group)
