@@ -1500,6 +1500,8 @@ class DeepSpeedEngine(Module):
         Returns:
             bool: if the current step is a gradient accumulation boundary.
         """
+        print(f'is_gradient_accumulation_boundary in rank {torch.distributed.get_rank()} self.micro_steps + 1: {self.micro_steps + 1}')
+        print(f'is_gradient_accumulation_boundary in rank {torch.distributed.get_rank()} self.gradient_accumulation_steps(): {self.gradient_accumulation_steps()}')
         return (self.micro_steps + 1) % \
             self.gradient_accumulation_steps() == 0
 
