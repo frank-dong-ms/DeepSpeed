@@ -1385,14 +1385,14 @@ class DeepSpeedEngine(Module):
         # Communicate only at gradient accumulation boundaries
         elif self.is_gradient_accumulation_boundary():
             if self.zero_optimization_stage() == ZERO_OPTIMIZATION_OPTIMIZER_STATES:
-                print(f'starts self.optimizer.reduce_gradients()...')
+                print(f'rank {torch.distributed.get_rank()} starts self.optimizer.reduce_gradients()...')
                 self.optimizer.reduce_gradients(
                     pipeline_parallel=self.pipeline_parallelism)
-                print(f'finish self.optimizer.reduce_gradients()...')
+                print(f'rank {torch.distributed.get_rank()} finish self.optimizer.reduce_gradients()...')
             else:
-                print(f'starts self.buffered_allreduce_fallback()...')
+                print(f'rank {torch.distributed.get_rank()} starts self.buffered_allreduce_fallback()...')
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
-                print(f'finishes self.buffered_allreduce_fallback()...')
+                print(f'rank {torch.distributed.get_rank()} finishes self.buffered_allreduce_fallback()...')
 
         print(f'rank {torch.distributed.get_rank()} finish allreduce_gradients...')
         
