@@ -1480,7 +1480,7 @@ class DeepSpeedEngine(Module):
 
         if self.enable_backward_allreduce:
             print(f"rank {torch.distributed.get_rank()} Start allreduce_gradients...")
-            self.allreduce_gradients()
+            #self.allreduce_gradients()
             print(f"rank {torch.distributed.get_rank()} Finish allreduce_gradients...")
 
         if self.wall_clock_breakdown():
