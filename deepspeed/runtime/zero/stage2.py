@@ -802,7 +802,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
     ############### Independent Partition Gradient ########################
     def reduce_independent_p_g_buckets_and_remove_grads(self, param, i):
-        print(f'rank {torch.distributed.get_rank()} starts reduce_independent_p_g_buckets_and_remove_grads...')
+        #print(f'rank {torch.distributed.get_rank()} starts reduce_independent_p_g_buckets_and_remove_grads...')
         
         if self.elements_in_ipg_bucket + param.numel() > self.reduce_bucket_size:
             self.report_ipg_memory_usage("In ipg_remove_grads before reduce_ipg_grads",
@@ -845,7 +845,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         self.report_ipg_memory_usage("End ipg_remove_grads", 0)
         
-        print(f'rank {torch.distributed.get_rank()} finishes reduce_independent_p_g_buckets_and_remove_grads...')
+        #print(f'rank {torch.distributed.get_rank()} finishes reduce_independent_p_g_buckets_and_remove_grads...')
 
     def print_rank_0(self, message):
         if dist.get_rank() == 0:
