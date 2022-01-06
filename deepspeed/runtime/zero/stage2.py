@@ -670,13 +670,17 @@ class FP16_DeepSpeedZeroOptimizer(object):
                     for accumulated_grad, new_avg_grad in zip(self.averaged_gradients[i], avg_new):
                         accumulated_grad.add_(new_avg_grad)
 
+        print(f'rank {torch.distributed.get_rank()} starts _release_ipg_buffers...')
         self._release_ipg_buffers()
 
+        print(f'rank {torch.distributed.get_rank()} finishes _release_ipg_buffers...')
         # No need to keep the gradients anymore.
         # All gradients required by the step
         # are in self.averaged_gradients
         self.zero_grad()
+        print(f'rank {torch.distributed.get_rank()} finishes zero_grad...')
         see_memory_usage(f"End ipg_epilogue")
+        print(f'rank {torch.distributed.get_rank()} finishes see_memory_usage...')
         print(f'rank {torch.distributed.get_rank()} finishes independent_gradient_partition_epilogue...')
 
     # resets all partition to no reduced
