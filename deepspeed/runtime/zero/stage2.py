@@ -636,7 +636,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         # if dist.get_rank() == 0:
         #    logger.info("Params already reduced %s", self.params_already_reduced)
-        print(f'rank {torch.distributed.get_rank()} Params already reduced {self.params_already_reduced}')
+        #print(f'rank {torch.distributed.get_rank()} Params already reduced {self.params_already_reduced}')
         
         for i in range(len(self.params_already_reduced)):
             self.params_already_reduced[i] = False
