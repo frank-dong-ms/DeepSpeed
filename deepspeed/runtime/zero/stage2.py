@@ -563,10 +563,11 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
     def reduce_gradients(self, pipeline_parallel=False):
         print(f'rank {torch.distributed.get_rank()} starts reduce_gradients...')
-        print(f'rank {torch.distributed.get_rank()} pipeline_parallel: {pipeline_parallel}, world_size: {world_size}, my_rank: {my_rank}')
-        print(f'rank {torch.distributed.get_rank()} self.contiguous_gradients: {self.contiguous_gradients}, self.overlap_comm: {self.overlap_comm}')
         world_size = dist.get_world_size(self.dp_process_group)
         my_rank = dist.get_rank(self.dp_process_group)
+        
+        print(f'rank {torch.distributed.get_rank()} pipeline_parallel: {pipeline_parallel}, world_size: {world_size}, my_rank: {my_rank}')
+        print(f'rank {torch.distributed.get_rank()} self.contiguous_gradients: {self.contiguous_gradients}, self.overlap_comm: {self.overlap_comm}')
 
         # with PP we must create ipg buffer, since backward is handled outside zero
         if pipeline_parallel and self.contiguous_gradients:
