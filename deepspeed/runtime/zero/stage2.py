@@ -1153,9 +1153,11 @@ class FP16_DeepSpeedZeroOptimizer(object):
         # Sum across all model parallel GPUs.
         total_norm_cuda = torch.cuda.FloatTensor([float(total_norm)])
 
+        print(f'rank {torch.distributed.get_rank()} all_reduce start in complete_grad_norm_calculation_for_cpu_offload with {total_norm_cuda}...')
         torch.distributed.all_reduce(total_norm_cuda,
                                      op=torch.distributed.ReduceOp.SUM,
                                      group=self.dp_process_group)
+        print(f'rank {torch.distributed.get_rank()} all_reduce finish in complete_grad_norm_calculation_for_cpu_offload with {total_norm_cuda}...')
 
         self._model_parallel_all_reduce(tensor=total_norm_cuda,
                                         op=torch.distributed.ReduceOp.SUM)
