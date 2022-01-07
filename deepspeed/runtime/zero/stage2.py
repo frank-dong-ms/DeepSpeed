@@ -654,7 +654,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
                 if not i in self.averaged_gradients or self.averaged_gradients[i] is None:
                     if torch.distributed.get_rank() == 7:
                         print(f'rank {torch.distributed.get_rank()} starts if get_flat_partition on index {i}...')
-                        print(f'rank {torch.distributed.get_rank()} {self.params_in_partition[i]}, {self.first_offset[i]}, {self.partition_size[i]}, {self.dtype}, {torch.cuda.current_device()}...')
+                        #print(f'rank {torch.distributed.get_rank()} {self.params_in_partition[i]}, {self.first_offset[i]}, {self.partition_size[i]}, {self.dtype}, {torch.cuda.current_device()}...')
                     self.averaged_gradients[i] = self.get_flat_partition(
                         self.params_in_partition[i],
                         self.first_offset[i],
@@ -666,21 +666,23 @@ class FP16_DeepSpeedZeroOptimizer(object):
                         print(f'rank {torch.distributed.get_rank()} finishes if get_flat_partition on index {i}...')
                         print(f'rank {torch.distributed.get_rank()} self.averaged_gradients[i]: {self.averaged_gradients[i]}...')
                 else:
-                    print(f'rank {torch.distributed.get_rank()} starts else get_flat_partition on index {i}...')
-                    print(f'rank {torch.distributed.get_rank()} torch.cuda.current_device(): {torch.cuda.current_device()}...')
-                    print(f'rank {torch.distributed.get_rank()} self.dtype: {self.dtype}...')
-                    print(f'rank {torch.distributed.get_rank()} self.partition_size[i]: {self.partition_size[i]}...')
-                    print(f'rank {torch.distributed.get_rank()} self.first_offset[i]: {self.first_offset[i]}...')
-                    print(f'rank {torch.distributed.get_rank()} self.params_in_partition[i]: {self.params_in_partition[i]}...')
+                    if torch.distributed.get_rank() == 7:
+                        print(f'rank {torch.distributed.get_rank()} starts else get_flat_partition on index {i}...')
+                        print(f'rank {torch.distributed.get_rank()} torch.cuda.current_device(): {torch.cuda.current_device()}...')
+                        print(f'rank {torch.distributed.get_rank()} self.dtype: {self.dtype}...')
+                        print(f'rank {torch.distributed.get_rank()} self.partition_size[i]: {self.partition_size[i]}...')
+                        print(f'rank {torch.distributed.get_rank()} self.first_offset[i]: {self.first_offset[i]}...')
+                        print(f'rank {torch.distributed.get_rank()} self.params_in_partition[i]: {self.params_in_partition[i]}...')
                     avg_new = self.get_flat_partition(self.params_in_partition[i],
                                                       self.first_offset[i],
                                                       self.partition_size[i],
                                                       dtype=self.dtype,
                                                       device=torch.cuda.current_device(),
                                                       return_tensor_list=True)
-                    print(f'rank {torch.distributed.get_rank()} finishes else get_flat_partition on index {i}...')
-                    print(f'rank {torch.distributed.get_rank()} avg_new: {avg_new}...')
-                    print(f'rank {torch.distributed.get_rank()} self.averaged_gradients[i]: {self.averaged_gradients[i]}...')
+                    if torch.distributed.get_rank() == 7:
+                        print(f'rank {torch.distributed.get_rank()} finishes else get_flat_partition on index {i}...')
+                        print(f'rank {torch.distributed.get_rank()} avg_new: {avg_new}...')
+                        print(f'rank {torch.distributed.get_rank()} self.averaged_gradients[i]: {self.averaged_gradients[i]}...')
 
                     for accumulated_grad, new_avg_grad in zip(self.averaged_gradients[i], avg_new):
                         accumulated_grad.add_(new_avg_grad)
