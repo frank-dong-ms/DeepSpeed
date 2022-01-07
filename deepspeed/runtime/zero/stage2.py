@@ -1883,9 +1883,11 @@ class FP16_DeepSpeedZeroOptimizer(object):
             print(f'distributed backend is {torch.distributed.get_backend(self.dp_process_group)}...')
             torch.distributed.barrier(group=self.dp_process_group)
             torch.cuda.synchronize()
+            print(f'rank {torch.distributed.get_rank()} all_reduce start in has_overflow with {overflow_gpu}...')
             torch.distributed.all_reduce(overflow_gpu,
                                          op=torch.distributed.ReduceOp.MAX,
                                          group=self.dp_process_group)
+            print(f'rank {torch.distributed.get_rank()} all_reduce finish in has_overflow with {overflow_gpu}...')
             print(f'finish all_reduce...')
             print(f'overflow result is {bool(overflow_gpu[0].item())}...')
         else:
