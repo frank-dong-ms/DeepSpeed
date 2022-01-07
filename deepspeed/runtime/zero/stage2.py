@@ -1527,6 +1527,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         if norm_type == inf:
             total_norm = max(g.data.abs().max() for g in gradients)
             total_norm_cuda = torch.cuda.FloatTensor([float(total_norm)])
+            torch.distributed.barrier(group=self.dp_process_group)
+            torch.cuda.synchronize()
             print(f'rank {torch.distributed.get_rank()} all_reduce start in get_grad_norm_direct if with {total_norm_cuda}...')
             torch.distributed.all_reduce(total_norm_cuda,
                                          op=torch.distributed.ReduceOp.MAX,
@@ -1551,6 +1553,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
             # Sum across all model parallel GPUs.
             total_norm_cuda = torch.cuda.FloatTensor([float(total_norm)])
 
+            torch.distributed.barrier(group=self.dp_process_group)
+            torch.cuda.synchronize()
             print(f'rank {torch.distributed.get_rank()} all_reduce start in get_grad_norm_direct else with {total_norm_cuda}...')
             torch.distributed.all_reduce(total_norm_cuda,
                                          op=torch.distributed.ReduceOp.SUM,
