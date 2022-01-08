@@ -347,7 +347,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
                 print(
                     f"Rank: {rank} partition count {self.partition_count} and sizes{[(p.numel(), self.is_moe_param_group[i] if hasattr(self, 'is_moe_param_group') else False) for i,p in enumerate(self.single_partition_of_fp32_groups)]} "
                 )
-                dist.barrier()
+                dist.barrier(device_ids=rank)
         #exit(0)
         self.reduce_bucket_size = int(reduce_bucket_size)
         self.allgather_bucket_size = int(allgather_bucket_size)
