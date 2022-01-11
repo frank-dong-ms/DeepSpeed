@@ -356,23 +356,29 @@ class OpBuilder(ABC):
                 print(f'self.absolute_name() {self.absolute_name()}')
                 return importlib.import_module(self.absolute_name())
             else:
+                print(f'jit load...')
                 return self.jit_load(verbose)
         except Exception as e:
             print(f'load failed with error {e}')
 
     def jit_load(self, verbose=True):
         if not self.is_compatible():
+            print('not compatible...')
+            print(f"Unable to JIT load the {self.name} op due to it not being compatible due to hardware/software issue.")
             raise RuntimeError(
                 f"Unable to JIT load the {self.name} op due to it not being compatible due to hardware/software issue."
             )
         try:
             import ninja
         except ImportError:
+            print('fail to import ninja...')
+            print(f"Unable to JIT load the {self.name} op due to ninja not being installed.")
             raise RuntimeError(
                 f"Unable to JIT load the {self.name} op due to ninja not being installed."
             )
 
         if isinstance(self, CUDAOpBuilder):
+            print('assert_no_cuda_mismatch...')
             assert_no_cuda_mismatch()
 
         self.jit_mode = True
@@ -383,6 +389,7 @@ class OpBuilder(ABC):
             os.environ.get('TORCH_EXTENSIONS_DIR',
                            DEFAULT_TORCH_EXTENSION_PATH),
             self.name)
+        print(f'ext_path: {ext_path}')
         os.makedirs(ext_path, exist_ok=True)
 
         start_build = time.time()
@@ -398,6 +405,7 @@ class OpBuilder(ABC):
             extra_cuda_cflags=self.strip_empty_entries(self.nvcc_args()),
             extra_ldflags=self.strip_empty_entries(self.extra_ldflags()),
             verbose=verbose)
+        print(f'load op module...')
         build_duration = time.time() - start_build
         if verbose:
             print(f"Time to load {self.name} op: {build_duration} seconds")
