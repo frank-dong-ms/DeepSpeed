@@ -124,6 +124,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         if not torch.cuda.is_available:
             raise SystemError("Cannot use fp16 without CUDA.")
         self.optimizer = init_optimizer
+        
+        logger.info(f"self.optimizer initialized")
 
         # Load pre-built or JIT compile (un)flatten ops
         util_ops = UtilsBuilder().load()
@@ -132,6 +134,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         # ZeRO stage 1 (False) or 2 (True)
         self.partition_gradients = partition_grads
+        
+        logger.info(f"self.partition_gradients {self.partition_gradients}")
 
         self.timers = timers
 
@@ -144,6 +148,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         self.deepspeed_adam_offload = cpu_offload
 
         self.device = torch.cuda.current_device() if not self.cpu_offload else 'cpu'
+        
+        logger.info(f"self.device {self.device}")
 
         self.dp_process_group = dp_process_group
 
@@ -155,6 +161,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         #data parallel size for non-experts
         dp_size = dist.get_world_size(group=self.dp_process_group)
+        
+        logger.info(f"self.dp_size {self.dp_size}")
 
         #For MoE models this maybe different for different param group
         #It will be modified during MoE setup later in the init
@@ -169,6 +177,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         self.contiguous_gradients = contiguous_gradients or cpu_offload
 
         self.has_moe_layers = has_moe_layers
+        
+        logger.info(f"self.has_moe_layers {self.has_moe_layers}")
 
         if self.has_moe_layers:
             self._configure_moe_settings()
@@ -180,6 +190,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         else:
             self.model_parallel_group = mpu.get_model_parallel_group()
             self.model_parallel_rank = bwc_tensor_model_parallel_rank(mpu)
+            
+        logger.info(f"self.overflow = False")
 
         self.overflow = False
         self.clip_grad = clip_grad
@@ -236,6 +248,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         assert (allgather_bucket_size % self.nccl_start_alignment_factor == 0), f"allgather_bucket_size must be a multiple of nccl_start_alignment_factor, {self.nccl_start_alignment_factor} "
 
+        logger.info(f"self.all_reduce_print = False")
         self.all_reduce_print = False
         self.dtype = self.optimizer.param_groups[0]['params'][0].dtype
 
@@ -247,6 +260,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         # loop to deal with groups
         for i, param_group in enumerate(self.optimizer.param_groups):
             partition_id = dist.get_rank(group=self.real_dp_process_group[i])
+            
+            logger.info(f"partition_id {partition_id}")
 
             # push this group to list before modify
             # TODO: Explore simplification that avoids the extra book-keeping by pushing the reordered group
@@ -268,6 +283,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
             # move all the parameters to cpu to free up GPU space for creating flat buffer
             move_to_cpu(self.fp16_groups[i])
             see_memory_usage(f"After moving param group {i} to CPU", force=False)
+            
+            logger.info(f"move to cpu")
 
             # Reorder group parameters for load balancing of gradient partitioning during backward among ranks.
             # This ensures that gradients are reduced in a fashion such that ownership round robins among the ranks.
@@ -284,6 +301,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
             self.round_robin_fp16_groups.append(round_robin_tensors)
             self.round_robin_fp6_indices.append(round_robin_indices)
+            
+            logger.info(f"before create flat buffer in cpu and move to gpu")
 
             # create flat buffer in CPU and move to GPU
             self.fp16_groups_flat.append(
@@ -294,6 +313,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
                         torch.cuda.current_device()))
             see_memory_usage(f"After flattening and moving param group {i} to GPU",
                              force=False)
+            
+            logger.info(f"finish create flat buffer in cpu and move to gpu")
 
             if dist.get_rank(group=self.real_dp_process_group[i]) == 0:
                 see_memory_usage(
@@ -302,6 +323,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
             # set model fp16 weight to slices of flattened buffer
             self._update_model_fp16_weights(i)
+            
+            logger.info(f"update model weights")
 
             # divide the flat weights into near equal partition equal to the data parallel degree
             # each process will compute on a different part of the partition
@@ -309,6 +332,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
                 self.fp16_groups_flat[i],
                 i)
             self.parallel_partitioned_fp16_groups.append(data_parallel_partitions)
+            
+            logger.info(f"get data parallel partitions")
 
             # verify that data partition start locations are 4-byte aligned
             for partitioned_data in data_parallel_partitions:
@@ -324,6 +349,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
                 self.single_partition_of_fp32_groups.append(
                     self.parallel_partitioned_fp16_groups[i][partition_id].to(
                         self.device).clone().half().detach())
+                
+            logger.info(f"verify data partitions")
 
             # modify optimizer of have flat master weight
             self.single_partition_of_fp32_groups[
@@ -336,18 +363,23 @@ class FP16_DeepSpeedZeroOptimizer(object):
                 self.round_robin_fp16_groups[i],
                 partition_size,
                 partition_id)
+            
+            logger.info(f"modify optimizer")
 
             self.partition_size.append(partition_size)
             self.params_in_partition.append(params_in_partition)
             self.params_not_in_partition.append(params_not_in_partition)
             self.first_offset.append(first_offset)
+            
+            logger.info(f"finish this partition {partition_id}")
 
         for rank in range(dist.get_world_size()):
             if dist.get_rank() == rank:
                 print(
                     f"Rank: {rank} partition count {self.partition_count} and sizes{[(p.numel(), self.is_moe_param_group[i] if hasattr(self, 'is_moe_param_group') else False) for i,p in enumerate(self.single_partition_of_fp32_groups)]} "
                 )
-                #dist.barrier()
+                dist.barrier()
+        logger.info(f"finish barrier")
         #exit(0)
         self.reduce_bucket_size = int(reduce_bucket_size)
         self.allgather_bucket_size = int(allgather_bucket_size)
@@ -374,6 +406,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
         # simplified param id
         self.param_id = {}
 
+        logger.info(f"start fp groups...")
+        
         largest_param_numel = 0
         count = 0
         for i, params_group in enumerate(self.fp16_groups):
@@ -414,6 +448,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
                                        self.first_offset[i],
                                        self.partition_size[i])
 
+        logger.info(f"finish cpu offload")
+        
         # mapping from parameter to partition that it belongs to
         self.param_to_partition_ids = {}
 
@@ -475,6 +511,8 @@ class FP16_DeepSpeedZeroOptimizer(object):
 
         if dist.get_rank(group=self.dp_process_group) == 0:
             see_memory_usage(f"After initializing ZeRO optimizer", force=True)
+            
+        logger.info(f"finish init for optimizer2")
 
     def _configure_moe_settings(self):
         assert self.contiguous_gradients, "Contiguous Gradients in ZeRO Stage 2 must be set to True for MoE. Other code paths are not tested with MoE"
