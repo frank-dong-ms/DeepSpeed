@@ -343,16 +343,22 @@ class OpBuilder(ABC):
             extra_link_args=self.strip_empty_entries(self.extra_ldflags()))
 
     def load(self, verbose=True):
-        from ...git_version_info import installed_ops, torch_info
-        if installed_ops[self.name]:
-            # Ensure the op we're about to load was compiled with the same
-            # torch/cuda versions we are currently using at runtime.
-            if isinstance(self, CUDAOpBuilder):
-                assert_torch_info(torch_info)
+        try:
+            from ...git_version_info import installed_ops, torch_info
+            if installed_ops[self.name]:
+                print(f'is installed op {self.name}')
+                # Ensure the op we're about to load was compiled with the same
+                # torch/cuda versions we are currently using at runtime.
+                if isinstance(self, CUDAOpBuilder):
+                    print(f'is cuda op...')
+                    assert_torch_info(torch_info)
 
-            return importlib.import_module(self.absolute_name())
-        else:
-            return self.jit_load(verbose)
+                print(f'self.absolute_name() {self.absolute_name()}')
+                return importlib.import_module(self.absolute_name())
+            else:
+                return self.jit_load(verbose)
+        except Exception as e:
+            print(f'load failed with error {e}')
 
     def jit_load(self, verbose=True):
         if not self.is_compatible():
