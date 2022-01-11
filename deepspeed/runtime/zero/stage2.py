@@ -162,7 +162,7 @@ class FP16_DeepSpeedZeroOptimizer(object):
         #data parallel size for non-experts
         dp_size = dist.get_world_size(group=self.dp_process_group)
         
-        logger.info(f"self.dp_size {self.dp_size}")
+        logger.info(f"dp_size {dp_size}")
 
         #For MoE models this maybe different for different param group
         #It will be modified during MoE setup later in the init
