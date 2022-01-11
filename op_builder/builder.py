@@ -344,6 +344,7 @@ class OpBuilder(ABC):
 
     def load(self, verbose=True):
         try:
+            print(f'self.name {self.name}...')
             from ...git_version_info import installed_ops, torch_info
             if installed_ops[self.name]:
                 print(f'is installed op {self.name}')
@@ -397,6 +398,12 @@ class OpBuilder(ABC):
         extra_include_paths = [
             self.deepspeed_src_path(path) for path in self.include_paths()
         ]
+        print(f'sources {sources}...')
+        print(f'extra_include_paths {extra_include_paths}...')
+        print(f'extra_cflags {self.strip_empty_entries(self.cxx_args())}')
+        print(f'extra_cuda_cflags {self.strip_empty_entries(self.nvcc_args())}')
+        print(f'extra_ldflags {self.strip_empty_entries(self.extra_ldflags())}')
+        
         op_module = load(
             name=self.name,
             sources=self.strip_empty_entries(sources),
